@@ -58,23 +58,22 @@ function purchaseTotals(purchases){
 }
 async function numberTotals(numberId){return purchaseTotals(await purchasesFor(numberId))}
 async function shareState(share,totalCost){
- const due=cents(totalCost*share.percentage/100);
+ const due=cents(totalCost*(share.costPercentage ?? share.percentage)/100);
  const paid=cents(Math.min(share.paidAmount||0,due));
  const pending=cents(Math.max(0,due-paid));
- const status=pending<=0?'paid':paid>0?'partial':'pending';
+ const status=due<=0?'zero':pending<=0?'paid':paid>0?'partial':'pending';
  return {due,paid,pending,status};
 }
-function statusPill(status){const labels={paid:'Pagado',pending:'Pendiente',partial:'Pago parcial'};return `<span class="pill ${status}">${labels[status]||status}</span>`}
+function statusPill(status){const labels={paid:'Pagado',pending:'Pendiente',partial:'Pago parcial',zero:'No tiene que pagar'};return `<span class="pill ${status}">${labels[status]||status}</span>`}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function refreshAll(){
  const numbers=await drawNumbers();const owners=await all('owners');
  let myCost=0,myPlayed=0,pending=0;
  for(const n of numbers){
   const ps=await purchasesFor(n.id),tot=purchaseTotals(ps),shares=await sharesFor(n.id);
-  const ownShare=shares.find(s=>s.isMe);
-  const minePct=ownShare?ownShare.percentage:Math.max(0,100-shares.reduce((sum,s)=>sum+(s.isMe?0:s.percentage),0));
-  myCost+=tot.cost*minePct/100;myPlayed+=tot.played*minePct/100;
-  for(const s of shares){if(!s.isMe){const state=await shareState(s,tot.cost);pending+=state.pending}}
+  const mineCostPct=Math.max(0,100-shares.filter(s=>!s.isMe).reduce((sum,s)=>sum+(s.costPercentage ?? s.percentage),0));
+  myCost+=tot.cost*mineCostPct/100;myPlayed+=tot.played*mineCostPct/100;
+  for(const s of shares){if(!s.isMe){const state=await shareState({...s,costPercentage:s.costPercentage ?? s.percentage},tot.cost);pending+=state.pending}}
  }
  $('statMine').textContent=eur(myCost);$('statPlayed').textContent=eur(myPlayed);$('statNumbers').textContent=numbers.length;$('statPending').textContent=eur(pending);
  $('homeNumbers').innerHTML=numbers.length?numbers.map(n=>numberCard(n)).join(''):'<div class="empty">Todavía no has registrado números.<br>Añade el primero para empezar.</div>';
@@ -111,20 +110,25 @@ async function openDetail(id){
  const d=await get('draws',n.drawId);const totals=await numberTotals(id);
  $('detailYear').textContent=d?.name||'';$('detailNumber').textContent=n.number;$('detailNotes').textContent=n.notes||'';
  $('detailCost').textContent=eur(totals.cost);
- const shares=await sharesFor(id);const mine=shares.find(s=>s.isMe);
- const minePct=mine?mine.percentage:Math.max(0,100-shares.filter(s=>!s.isMe).reduce((sum,s)=>sum+s.percentage,0));
- $('detailMine').textContent=eur(totals.cost*minePct/100);
+ const shares=await sharesFor(id);
+ const mineCostPct=Math.max(0,100-shares.filter(s=>!s.isMe).reduce((sum,s)=>sum+(s.costPercentage ?? s.percentage),0));
+ $('detailMine').textContent=eur(totals.cost*mineCostPct/100);
  const purchases=await purchasesFor(id);
  $('purchaseList').innerHTML=purchases.length?purchases.map(p=>`<div class="item"><div class="itemhead"><div><b>${p.type==='whole'?'Décimo entero':'Participación'} · ${p.quantity} ud.</b><div class="smalltext">${p.date?esc(p.date)+' · ':''}${esc(p.seller||'')}${p.notes?' · '+esc(p.notes):''}</div><div class="smalltext">Juega ${eur(p.played)} por unidad</div></div><div style="text-align:right"><div class="money">${eur(p.quantity*p.price)}</div><button class="secondary small" onclick="editPurchase('${p.id}')">Editar</button> <button class="danger small" onclick="deletePurchase('${p.id}')">×</button></div></div></div>`).join(''):'<div class="empty">Aún no hay compras registradas.</div>';
  await renderShares(id,totals.cost);showView('detail');
 }
 async function renderShares(numberId,cost){
  const shares=await sharesFor(numberId);const owners=await all('owners');
- $('shareList').innerHTML=shares.length?await Promise.all(shares.map(async s=>{
-  const o=s.isMe?{name:'Yo'}:owners.find(x=>x.id===s.ownerId)||{name:'Persona eliminada'};
-  const state=await shareState(s,cost);
-  return `<div class="item"><div class="itemhead"><div><b>${esc(o.name)}</b> ${s.isMe?'<span class="pill">Mi parte</span>':''}<div class="smalltext">${s.percentage}% del número</div><div style="margin-top:7px">${statusPill(s.isMe?'paid':state.status)}</div></div><div style="text-align:right"><div class="money">${eur(s.isMe?cost*s.percentage/100:state.due)}</div><div class="smalltext">${s.isMe?'Tu parte estimada':`Pagado: ${eur(state.paid)} · Pendiente: ${eur(state.pending)}`}</div>${!s.isMe?`<button class="secondary small" style="margin-top:8px" onclick="editShare('${s.id}')">Gestionar pago</button>`:''}</div></div></div>`;
- })).then(a=>a.join('')):'<div class="empty">Aún no has definido el reparto. Añade personas y porcentajes.</div>';
+ const otherShares=shares.filter(s=>!s.isMe);
+ const myPrizePct=Math.max(0,100-otherShares.reduce((sum,s)=>sum+s.percentage,0));
+ const myCostPct=Math.max(0,100-otherShares.reduce((sum,s)=>sum+(s.costPercentage ?? s.percentage),0));
+ let html=`<div class="item"><div class="itemhead"><div><b>Yo</b> <span class="pill">Comprador</span><div class="smalltext">Premio: ${cents(myPrizePct)}% · Coste: ${cents(myCostPct)}%</div></div><div style="text-align:right"><div class="money">${eur(cost*myCostPct/100)}</div><div class="smalltext">Tu coste estimado</div></div></div></div>`;
+ for(const s of otherShares){
+  const o=owners.find(x=>x.id===s.ownerId)||{name:'Persona eliminada'};
+  const state=await shareState({...s,costPercentage:s.costPercentage ?? s.percentage},cost);
+  html+=`<div class="item"><div class="itemhead"><div><b>${esc(o.name)}</b><div class="smalltext">Premio: ${s.percentage}% · Coste: ${s.costPercentage ?? s.percentage}%</div><div style="margin-top:7px">${statusPill(state.status)}</div></div><div style="text-align:right"><div class="money">${eur(state.due)}</div><div class="smalltext">Pagado: ${eur(state.paid)}<br>Pendiente: ${eur(state.pending)}</div><div class="actions" style="justify-content:flex-end;margin-top:8px"><button class="secondary small" onclick="editShare('${s.id}')">Editar</button><button class="danger small" onclick="removeShare('${s.id}')">Quitar</button></div></div></div></div>`;
+ }
+ $('shareList').innerHTML=otherShares.length?html:'<div class="empty">Aún no has definido personas para este número. Tu coste estimado será el coste completo.</div>';
 }
 async function editCurrentNumber(){openNumberForm(currentNumberId)}
 async function deleteCurrentNumber(){
@@ -151,37 +155,63 @@ async function deletePurchase(id){if(!confirm('¿Eliminar esta compra?'))return;
 $('ownerForm').addEventListener('submit',async e=>{e.preventDefault();const name=$('ownerName').value.trim();if(!name)return;await put('owners',{id:uid(),name,notes:$('ownerNotes').value.trim(),createdAt:new Date().toISOString()});$('ownerName').value='';$('ownerNotes').value='';await refreshAll();toast('Persona guardada')});
 async function deleteOwner(id){
  const related=await queryIndex('shares','ownerId',id);
- if(related.length){toast('Esta persona está asignada a un reparto. Edita o elimina primero esos repartos.');return}
- if(confirm('¿Eliminar esta persona?')){await del('owners',id);await refreshAll();toast('Persona eliminada')}
+ const message=related.length?`Esta persona está incluida en ${related.length} reparto(s). Si la eliminas, también se quitará de esos números. ¿Continuar?`:'¿Eliminar esta persona?';
+ if(confirm(message)){for(const s of related)await del('shares',s.id);await del('owners',id);await refreshAll();if(currentNumberId)await openDetail(currentNumberId);toast('Persona eliminada y quitada de sus repartos')}
+}
+async function removeShare(id){
+ const s=await get('shares',id);if(!s)return;
+ const owner=await get('owners',s.ownerId);
+ if(!confirm(`¿Quitar a ${owner?.name||'esta persona'} del reparto de este número? Se eliminará también el registro de pagos asociado a este número.`))return;
+ await del('shares',id);const shares=await sharesFor(currentNumberId);const sum=shares.filter(x=>!x.isMe).reduce((a,x)=>a+x.percentage,0);const my=shares.find(x=>x.isMe);
+ if(sum<100){await put('shares',{id:my?.id||uid(),numberId:currentNumberId,ownerId:null,percentage:cents(100-sum),costPercentage:cents(100-shares.filter(x=>!x.isMe).reduce((a,x)=>a+(x.costPercentage ?? x.percentage),0)),paidAmount:0,paidDate:'',notes:'Parte propia calculada automáticamente',isMe:true,updatedAt:new Date().toISOString()})}else if(my)await del('shares',my.id);
+ await openDetail(currentNumberId);toast('Persona quitada del reparto')
 }
 async function openOwnersForNumber(){
  const owners=await all('owners');const shares=await sharesFor(currentNumberId);
  $('shareOwner').innerHTML=owners.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
  if(!owners.length){toast('Primero añade personas en la pestaña Personas.');showView('owners');return}
- $('shareOwner').value=owners[0].id;$('sharePercent').value='';$('sharePaid').value='0';$('sharePayDate').value='';$('shareNotes').value='';
+ $('shareOwner').value=owners[0].id;$('sharePercent').value='';$('shareCostPercent').value='50';$('sharePaid').value='0';$('sharePayDate').value='';$('shareNotes').value='';
  $('shareFormIntro').textContent='Configura el porcentaje de cada persona y registra cuánto ha pagado para este número. También se añadirá automáticamente tu propia parte al guardar el primer reparto.';
  showView('shareFormView');
 }
 async function editShare(id){
  const s=await get('shares',id);if(!s)return;const owners=await all('owners');
  $('shareOwner').innerHTML=owners.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
- $('shareOwner').value=s.ownerId;$('sharePercent').value=s.percentage;$('sharePaid').value=s.paidAmount||0;$('sharePayDate').value=s.paidDate||'';$('shareNotes').value=s.notes||'';$('shareFormIntro').textContent='Edita el porcentaje y los pagos registrados de esta persona.';showView('shareFormView');
+ $('shareOwner').value=s.ownerId;$('sharePercent').value=s.percentage;$('shareCostPercent').value=s.costPercentage ?? s.percentage;$('sharePaid').value=s.paidAmount||0;$('sharePayDate').value=s.paidDate||'';$('shareNotes').value=s.notes||'';$('shareFormIntro').textContent='Edita el porcentaje y los pagos registrados de esta persona.';showView('shareFormView');
 }
 $('shareForm').addEventListener('submit',async e=>{
- e.preventDefault();const ownerId=$('shareOwner').value,percentage=Number($('sharePercent').value),paidAmount=Number($('sharePaid').value);
- if(!ownerId||percentage<=0||percentage>100||paidAmount<0){toast('Revisa persona, porcentaje e importe pagado.');return}
+ e.preventDefault();const ownerId=$('shareOwner').value,percentage=Number($('sharePercent').value),costPercentage=Number($('shareCostPercent').value),paidAmount=Number($('sharePaid').value);
+ if(!ownerId||percentage<=0||percentage>100||costPercentage<0||costPercentage>100||paidAmount<0){toast('Revisa persona, porcentajes e importe pagado.');return}
  const allShares=await sharesFor(currentNumberId);const existing=allShares.find(s=>s.ownerId===ownerId&&!s.isMe);
- const sumOthers=allShares.filter(s=>!s.isMe&&s.id!==existing?.id).reduce((sum,s)=>sum+s.percentage,0);
- if(sumOthers+percentage>100.0001){toast('Los porcentajes de las otras personas superarían el 100 %.');return}
- const totals=await numberTotals(currentNumberId);if(paidAmount>totals.cost*percentage/100+0.01){if(!confirm('El importe pagado supera la deuda calculada para esta persona. ¿Guardarlo de todos modos?'))return}
- const share={id:existing?.id||uid(),numberId:currentNumberId,ownerId,percentage,paidAmount:cents(paidAmount),paidDate:$('sharePayDate').value||'',notes:$('shareNotes').value.trim(),isMe:false,updatedAt:new Date().toISOString()};
+ const otherShares=allShares.filter(s=>!s.isMe&&s.id!==existing?.id);
+ const sumOthers=otherShares.reduce((sum,s)=>sum+s.percentage,0);
+ const sumCostOthers=otherShares.reduce((sum,s)=>sum+(s.costPercentage ?? s.percentage),0);
+ if(sumOthers+percentage>100.0001){toast('Los porcentajes de premio superarían el 100 %.');return}
+ if(sumCostOthers+costPercentage>100.0001){toast('Los porcentajes de coste superarían el 100 %.');return}
+ const totals=await numberTotals(currentNumberId);if(paidAmount>totals.cost*costPercentage/100+0.01){if(!confirm('El importe pagado supera la deuda calculada para esta persona. ¿Guardarlo de todos modos?'))return}
+ const share={id:existing?.id||uid(),numberId:currentNumberId,ownerId,percentage,costPercentage,paidAmount:cents(paidAmount),paidDate:$('sharePayDate').value||'',notes:$('shareNotes').value.trim(),isMe:false,updatedAt:new Date().toISOString()};
  await put('shares',share);
  // My share is the remainder. It is a bookkeeping share, not a debt.
- const updated=await sharesFor(currentNumberId);const my=updated.find(s=>s.isMe);const sum=updated.filter(s=>!s.isMe).reduce((a,s)=>a+s.percentage,0);
- if(sum<100){await put('shares',{id:my?.id||uid(),numberId:currentNumberId,ownerId:null,percentage:cents(100-sum),paidAmount:0,paidDate:'',notes:'Parte propia calculada automáticamente',isMe:true,updatedAt:new Date().toISOString()})}
+ const updated=await sharesFor(currentNumberId);const my=updated.find(s=>s.isMe);const sum=updated.filter(s=>!s.isMe).reduce((a,s)=>a+s.percentage,0);const costSum=updated.filter(s=>!s.isMe).reduce((a,s)=>a+(s.costPercentage ?? s.percentage),0);
+ if(sum<100||costSum<100){await put('shares',{id:my?.id||uid(),numberId:currentNumberId,ownerId:null,percentage:cents(Math.max(0,100-sum)),costPercentage:cents(Math.max(0,100-costSum)),paidAmount:0,paidDate:'',notes:'Parte propia calculada automáticamente',isMe:true,updatedAt:new Date().toISOString()})}
  else if(my) await del('shares',my.id);
  await openDetail(currentNumberId);toast('Reparto y pago guardados');
 });
+async function updateApp(){
+ try{
+  if('serviceWorker' in navigator){
+   const regs=await navigator.serviceWorker.getRegistrations();
+   await Promise.all(regs.map(r=>r.update().catch(()=>{})));
+  }
+  if('caches' in window){
+   const keys=await caches.keys();
+   await Promise.all(keys.filter(k=>k.startsWith('mis-decimos-')).map(k=>caches.delete(k)));
+  }
+  toast('Actualizando aplicación…');
+  setTimeout(()=>location.reload(),350);
+ }catch(err){location.reload()}
+}
+
 async function exportBackup(){
  const data={app:'Mis Décimos',schemaVersion:1,exportedAt:new Date().toISOString(),draws:await all('draws'),numbers:await all('numbers'),purchases:await all('purchases'),owners:await all('owners'),shares:await all('shares')};
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`mis-decimos-copia-${today()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);toast('Copia preparada para guardar');
