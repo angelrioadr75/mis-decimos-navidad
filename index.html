@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1830">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mis Décimos">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Mis Décimos · Lotería de Navidad</title>
+<style>
+:root{color-scheme:dark;--bg:#081222;--panel:#101f35;--panel2:#172a45;--line:#29405d;--text:#f3f7fc;--muted:#a8b8cc;--blue:#4da3ff;--green:#43d6a0;--red:#ff7d86;--amber:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#0b1830 0,#081222 45%);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+header{padding:calc(20px + env(safe-area-inset-top)) 18px 18px;position:sticky;top:0;z-index:5;background:#0b1830ed;backdrop-filter:blur(14px);border-bottom:1px solid #223650}
+.eyebrow{font-size:12px;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.12em}h1{font-size:26px;margin:6px 0 0}h2{font-size:19px;margin:0 0 14px}h3{font-size:16px;margin:0 0 8px}
+main{max-width:760px;margin:0 auto;padding:18px 14px}.view{display:none}.view.active{display:block}
+.card{background:linear-gradient(145deg,var(--panel),#0f1b2e);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px;box-shadow:0 8px 22px #0002}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:var(--panel2);padding:13px;border-radius:14px;border:1px solid #29405d}.stat small{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}.stat strong{font-size:21px;overflow-wrap:anywhere}
+button,.button{border:0;border-radius:12px;padding:12px 14px;background:var(--blue);color:#061426;font-weight:800;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
+button.secondary,.button.secondary{background:#203752;color:var(--text);border:1px solid #35516f}button.danger{background:#482632;color:#ffdbe0;border:1px solid #793b4c}button.small{padding:8px 10px;font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.full{width:100%}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}input,select,textarea{width:100%;background:#081426;border:1px solid #35506d;border-radius:11px;padding:12px;color:var(--text);font:inherit;min-height:44px}input:focus,select:focus,textarea:focus{outline:2px solid #4da3ff88;border-color:var(--blue)}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}.muted{color:var(--muted)}.smalltext{font-size:12px;color:var(--muted);line-height:1.45}.pill{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:800;background:#213a56;color:#cfe7ff}.pill.paid{background:#153f38;color:#8af0cc}.pill.pending{background:#4a3820;color:#ffdf91}.pill.partial{background:#3b2f55;color:#dac6ff}
+.item{padding:14px 0;border-top:1px solid #263c56}.item:first-child{border-top:0;padding-top:0}.itemhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.number{font-size:24px;font-weight:850;letter-spacing:.06em}.money{font-size:18px;font-weight:800}.empty{text-align:center;padding:25px 12px;color:var(--muted)}.hidden{display:none!important}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:10;background:#0b1830f2;backdrop-filter:blur(16px);border-top:1px solid #29405d;padding:8px 7px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);max-width:760px;margin:auto}
+nav button{background:transparent;color:var(--muted);padding:8px 3px;display:flex;flex-direction:column;gap:4px;font-size:11px;border-radius:10px}nav button.active{background:#183451;color:#fff}nav span{font-size:20px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#112e45;border:1px solid #27506f;padding:12px;border-radius:12px;color:#d4eaff;font-size:13px;line-height:1.5}.formtitle{display:flex;justify-content:space-between;align-items:center;gap:10px}.checkline{display:flex;align-items:center;gap:8px}.checkline input{width:20px;min-height:20px}
+@media(min-width:620px){main{padding:24px}.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="eyebrow">Control personal</div><h1>Mis Décimos</h1></header>
+<main>
+<section id="home" class="view active">
+ <div class="stats">
+  <div class="stat"><small>Gastado por mí</small><strong id="statMine">0,00 €</strong></div>
+  <div class="stat"><small>Importe jugado propio</small><strong id="statPlayed">0,00 €</strong></div>
+  <div class="stat"><small>Números registrados</small><strong id="statNumbers">0</strong></div>
+  <div class="stat"><small>Pendiente de cobrar</small><strong id="statPending">0,00 €</strong></div>
+ </div>
+ <div class="card" style="margin-top:14px"><div class="formtitle"><h2>Mis números</h2><button onclick="openNumberForm()">＋ Añadir número</button></div><div id="homeNumbers"></div></div>
+ <div class="notice">Tus datos se guardan en este dispositivo. Exporta una copia de seguridad periódicamente desde Ajustes, especialmente antes de cambiar de iPhone.</div>
+</section>
+
+<section id="numbers" class="view">
+ <div class="card"><div class="formtitle"><h2>Números y compras</h2><button onclick="openNumberForm()">＋ Añadir</button></div><div id="numberList"></div></div>
+</section>
+
+<section id="owners" class="view">
+ <div class="card"><h2>Personas</h2><p class="smalltext">Gestiona las personas que comparten tus números. El estado de pago se registra por persona y número.</p>
+ <form id="ownerForm"><label for="ownerName">Nombre</label><input id="ownerName" required maxlength="80" placeholder="Ej. Ana Pérez"><label for="ownerNotes">Notas (opcional)</label><input id="ownerNotes" maxlength="200" placeholder="Ej. hermana, compañero..."><div class="actions" style="margin-top:12px"><button type="submit">Guardar persona</button></div></form><hr><div id="ownerList"></div></div>
+</section>
+
+<section id="settings" class="view">
+ <div class="card"><h2>Copias de seguridad</h2><p class="smalltext">Exporta todos tus sorteos, números, compras, propietarios y estado de los pagos a un archivo JSON. Guárdalo en la app Archivos o en iCloud Drive.</p><div class="actions"><button class="full" onclick="exportBackup()">Exportar copia</button></div>
+ <label for="backupFile">Restaurar una copia</label><input type="file" id="backupFile" accept=".json,application/json"><div class="actions" style="margin-top:10px"><button class="secondary full" onclick="importBackup()">Validar y restaurar</button></div><p class="smalltext">La restauración sustituye los datos actuales después de pedir confirmación. Exporta una copia antes de restaurar.</p></div>
+ <div class="card"><h2>Preferencias</h2><label for="drawYear">Sorteo seleccionado</label><select id="drawYear"></select><button class="secondary" onclick="changeDraw()">Usar este sorteo</button><hr><p class="smalltext">Versión 1.0 · Datos locales · Sin cuenta ni servidor.</p><button class="danger" onclick="clearAll()">Borrar todos los datos</button></div>
+</section>
+
+<section id="numberFormView" class="view">
+ <div class="card"><div class="formtitle"><h2 id="numberFormTitle">Añadir número</h2><button class="secondary small" onclick="showView('numbers')">Cancelar</button></div>
+ <form id="numberForm">
+  <input type="hidden" id="editNumberId">
+  <label for="numValue">Número de cinco cifras</label><input id="numValue" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="Ej. 01234" required>
+  <label for="numNotes">Notas (opcional)</label><input id="numNotes" maxlength="200" placeholder="Administración, lugar de compra...">
+  <div class="actions" style="margin-top:16px"><button type="submit">Guardar número</button><button type="button" class="secondary" onclick="showView('numbers')">Cancelar</button></div>
+ </form></div>
+</section>
+
+<section id="detail" class="view">
+ <div class="card"><div class="formtitle"><div><div class="eyebrow" id="detailYear"></div><div class="number" id="detailNumber">00000</div></div><button class="secondary small" onclick="showView('numbers')">Volver</button></div><p id="detailNotes" class="muted"></p><div class="stats"><div class="stat"><small>Coste total</small><strong id="detailCost">0 €</strong></div><div class="stat"><small>Mi coste estimado</small><strong id="detailMine">0 €</strong></div></div><div class="actions" style="margin-top:13px"><button onclick="openPurchaseForm()">＋ Añadir compra</button><button class="secondary" onclick="openOwnersForNumber()">Propietarios y pagos</button><button class="secondary" onclick="editCurrentNumber()">Editar número</button><button class="danger" onclick="deleteCurrentNumber()">Eliminar</button></div></div>
+ <div class="card"><h2>Compras registradas</h2><div id="purchaseList"></div></div>
+ <div class="card"><h2>Propietarios y pagos</h2><p class="smalltext">El importe que debe aportar cada persona se calcula a partir del coste total del número y su porcentaje. Puedes marcarlo como pagado o pendiente, o registrar un pago parcial.</p><div id="shareList"></div></div>
+</section>
+
+<section id="purchaseFormView" class="view">
+ <div class="card"><div class="formtitle"><h2 id="purchaseFormTitle">Añadir compra</h2><button class="secondary small" onclick="showView('detail')">Cancelar</button></div>
+ <form id="purchaseForm">
+ <input type="hidden" id="editPurchaseId">
+ <label for="purchaseType">Tipo de compra</label><select id="purchaseType"><option value="whole">Décimo entero</option><option value="participation">Participación</option></select>
+ <div class="row"><div><label for="purchaseQty">Cantidad</label><input id="purchaseQty" type="number" min="1" step="1" value="1" required></div><div><label for="purchasePrice">Precio pagado por unidad (€)</label><input id="purchasePrice" type="number" min="0.01" step="0.01" value="20" required></div></div>
+ <label for="purchasePlayed">Importe jugado por unidad (€)</label><input id="purchasePlayed" type="number" min="0" step="0.01" value="20" required>
+ <div class="row"><div><label for="purchaseDate">Fecha de compra</label><input id="purchaseDate" type="date"></div><div><label for="purchaseSeller">Dónde lo compré (opcional)</label><input id="purchaseSeller" maxlength="100" placeholder="Administración..."></div></div>
+ <label for="purchaseNotes">Notas (opcional)</label><input id="purchaseNotes" maxlength="200">
+ <div class="actions" style="margin-top:16px"><button type="submit">Guardar compra</button><button type="button" class="secondary" onclick="showView('detail')">Cancelar</button></div>
+ </form></div>
+</section>
+
+<section id="shareFormView" class="view">
+ <div class="card"><div class="formtitle"><h2>Propietarios y pagos</h2><button class="secondary small" onclick="showView('detail')">Volver</button></div><p class="smalltext" id="shareFormIntro"></p>
+ <form id="shareForm"><label for="shareOwner">Persona</label><select id="shareOwner" required></select><label for="sharePercent">Porcentaje de propiedad (%)</label><input id="sharePercent" type="number" min="0.01" max="100" step="0.01" required placeholder="Ej. 50"><label for="sharePaid">Importe que ya ha pagado (€)</label><input id="sharePaid" type="number" min="0" step="0.01" value="0" required><label for="sharePayDate">Fecha del último pago (opcional)</label><input id="sharePayDate" type="date"><label for="shareNotes">Notas (opcional)</label><input id="shareNotes" maxlength="200"><div class="actions" style="margin-top:16px"><button type="submit">Guardar reparto</button><button type="button" class="secondary" onclick="showView('detail')">Cancelar</button></div></form><hr><div class="notice">Estado automático: <b>Pendiente</b> si no ha pagado nada, <b>Parcial</b> si ha pagado una parte y <b>Pagado</b> si ha cubierto todo lo que le corresponde. Si cambia el coste del número, la deuda se recalcula.</div></div>
+</section>
+</main>
+<nav>
+ <button class="active" data-view="home" onclick="showView('home')"><span>⌂</span>Inicio</button>
+ <button data-view="numbers" onclick="showView('numbers')"><span>🎟</span>Números</button>
+ <button data-view="owners" onclick="showView('owners')"><span>♙</span>Personas</button>
+ <button data-view="settings" onclick="showView('settings')"><span>⚙</span>Ajustes</button>
+</nav>
+<div id="toast" style="position:fixed;left:14px;right:14px;bottom:calc(85px + env(safe-area-inset-bottom));background:#1c3855;border:1px solid #4c7297;padding:13px 16px;border-radius:12px;z-index:30;display:none;box-shadow:0 10px 30px #0006"></div>
+<script src="app.js"></script>
+</body>
+</html>

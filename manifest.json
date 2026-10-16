@@ -1,0 +1,19 @@
+{
+  "name": "Mis Décimos · Lotería de Navidad",
+  "short_name": "Mis Décimos",
+  "description": "Control local de décimos, participaciones, propietarios y pagos de la Lotería de Navidad.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#081222",
+  "theme_color": "#0b1830",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
