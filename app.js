@@ -79,8 +79,12 @@ async function refreshAll(){
  $('homeNumbers').innerHTML=numbers.length?numbers.map(n=>numberCard(n)).join(''):'<div class="empty">Todavía no has registrado números.<br>Añade el primero para empezar.</div>';
  $('numberList').innerHTML=numbers.length?numbers.map(n=>numberCard(n)).join(''):'<div class="empty">No hay números para este sorteo.</div>';
  $('ownerList').innerHTML=owners.length?owners.map(o=>`<div class="item"><div class="itemhead"><div><b>${esc(o.name)}</b><div class="smalltext">${esc(o.notes||'')}</div></div><button class="secondary small" onclick="deleteOwner('${o.id}')">Eliminar</button></div></div>`).join(''):'<div class="empty">Añade aquí a las personas con las que compartes números.</div>';
- const draws=await all('draws');$('drawYear').innerHTML=draws.slice().sort((a,b)=>b.year-a.year).map(d=>`<option value="${d.id}" ${d.id===currentDrawId?'selected':''}>${esc(d.name)}</option>`).join('');
- const numberDraw=$('numberDraw');if(numberDraw){const selected=numberDraw.value||currentDrawId;numberDraw.innerHTML=draws.slice().sort((a,b)=>b.year-a.year).map(d=>`<option value="${d.id}" ${d.id===selected?'selected':''}>${esc(d.name)}</option>`).join('');}
+ const draws=(await all('draws')).slice().sort((a,b)=>b.year-a.year);
+ const drawOptions=draws.map(d=>`<option value="${d.id}" ${d.id===currentDrawId?'selected':''}>${esc(d.name)}</option>`).join('');
+ for(const selectorId of ['drawYear','drawSelectHome','drawSelectNumbers']){
+  const selector=$(selectorId);if(selector)selector.innerHTML=drawOptions;
+ }
+ const numberDraw=$('numberDraw');if(numberDraw){const selected=numberDraw.value||currentDrawId;numberDraw.innerHTML=draws.map(d=>`<option value="${d.id}" ${d.id===selected?'selected':''}>${esc(d.name)}</option>`).join('');}
 }
 function numberCard(n){
  return `<div class="item"><div class="itemhead"><div style="min-width:0"><div class="number">${esc(n.number)}</div><div class="smalltext">${esc(n.notes||'Sin notas')}</div></div><button class="secondary small" onclick="openDetail('${n.id}')">Ver detalle →</button></div></div>`;
@@ -93,6 +97,12 @@ function showView(id){
 }
 async function changeDraw(){
  const id=$('drawYear').value;if(id)currentDrawId=id;await refreshAll();showView('home');toast('Sorteo seleccionado');
+}
+async function selectDrawFromTab(id){
+ if(!id||id===currentDrawId)return;
+ currentDrawId=id;
+ await refreshAll();
+ toast('Sorteo cambiado');
 }
 function toggleDrawForm(force){
  const wrap=$('drawFormWrap');const shouldShow=typeof force==='boolean'?force:wrap.classList.contains('hidden');

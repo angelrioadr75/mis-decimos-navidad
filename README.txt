@@ -33,3 +33,5 @@ Regla de pagos:
 - Por cada número, cada persona tiene un porcentaje y un importe pagado.
 - El estado se calcula como Pendiente, Pago parcial o Pagado según el coste actual y el porcentaje.
 - El coste debido se recalcula si añades o editas compras de ese número.
+
+Mejora v1.3: selector de sorteo visible en Inicio y Números. Cambiarlo actualiza el contenido de ambas pestañas sin entrar en Ajustes.

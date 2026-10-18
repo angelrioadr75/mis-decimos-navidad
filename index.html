@@ -33,6 +33,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#1
 <header><div class="eyebrow">Control personal</div><h1>Mis Décimos</h1></header>
 <main>
 <section id="home" class="view active">
+ <div class="card" style="margin-bottom:14px;padding:13px 15px"><label for="drawSelectHome" style="margin-top:0">Sorteo seleccionado</label><select id="drawSelectHome" onchange="selectDrawFromTab(this.value)"></select></div>
  <div class="stats">
   <div class="stat"><small>Gastado por mí</small><strong id="statMine">0,00 €</strong></div>
   <div class="stat"><small>Importe jugado propio</small><strong id="statPlayed">0,00 €</strong></div>
@@ -44,6 +45,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#1
 </section>
 
 <section id="numbers" class="view">
+ <div class="card" style="margin-bottom:14px;padding:13px 15px"><label for="drawSelectNumbers" style="margin-top:0">Sorteo seleccionado</label><select id="drawSelectNumbers" onchange="selectDrawFromTab(this.value)"></select></div>
  <div class="actions" style="margin-bottom:10px"><button class="full" onclick="openNumberForm()">＋ Añadir número</button></div><div class="card"><h2>Números y compras</h2><div id="numberList"></div></div>
 </section>
 
