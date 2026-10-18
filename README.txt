@@ -8,6 +8,12 @@ Contenido:
 - sw.js: caché offline.
 - icon.svg: icono.
 
+Novedades v1.2:
+- El botón de añadir número queda fuera de la tarjeta Mis números.
+- En Ajustes puedes crear sorteos nuevos.
+- Cada número tiene un selector de sorteo y queda vinculado al sorteo elegido.
+- Al crear un sorteo, pasa a ser el seleccionado para registrar números nuevos.
+
 Publicación en GitHub Pages:
 1. Descomprime el ZIP en tu ordenador.
 2. Entra en el repositorio GitHub que quieras usar.

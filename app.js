@@ -1,6 +1,6 @@
 /* Mis Décimos - primera versión. Datos locales en IndexedDB. */
 const DB_NAME = 'mis-decimos-db';
-const DB_VERSION = 1;
+const DB_VERSION = 1; // No cambia el esquema: drawId ya relaciona cada número con su sorteo.
 const STORES = ['draws','numbers','purchases','owners','shares'];
 let db;
 let currentDrawId = null;
@@ -79,7 +79,8 @@ async function refreshAll(){
  $('homeNumbers').innerHTML=numbers.length?numbers.map(n=>numberCard(n)).join(''):'<div class="empty">Todavía no has registrado números.<br>Añade el primero para empezar.</div>';
  $('numberList').innerHTML=numbers.length?numbers.map(n=>numberCard(n)).join(''):'<div class="empty">No hay números para este sorteo.</div>';
  $('ownerList').innerHTML=owners.length?owners.map(o=>`<div class="item"><div class="itemhead"><div><b>${esc(o.name)}</b><div class="smalltext">${esc(o.notes||'')}</div></div><button class="secondary small" onclick="deleteOwner('${o.id}')">Eliminar</button></div></div>`).join(''):'<div class="empty">Añade aquí a las personas con las que compartes números.</div>';
- const draws=await all('draws');$('drawYear').innerHTML=draws.sort((a,b)=>b.year-a.year).map(d=>`<option value="${d.id}" ${d.id===currentDrawId?'selected':''}>${esc(d.name)}</option>`).join('');
+ const draws=await all('draws');$('drawYear').innerHTML=draws.slice().sort((a,b)=>b.year-a.year).map(d=>`<option value="${d.id}" ${d.id===currentDrawId?'selected':''}>${esc(d.name)}</option>`).join('');
+ const numberDraw=$('numberDraw');if(numberDraw){const selected=numberDraw.value||currentDrawId;numberDraw.innerHTML=draws.slice().sort((a,b)=>b.year-a.year).map(d=>`<option value="${d.id}" ${d.id===selected?'selected':''}>${esc(d.name)}</option>`).join('');}
 }
 function numberCard(n){
  return `<div class="item"><div class="itemhead"><div style="min-width:0"><div class="number">${esc(n.number)}</div><div class="smalltext">${esc(n.notes||'Sin notas')}</div></div><button class="secondary small" onclick="openDetail('${n.id}')">Ver detalle →</button></div></div>`;
@@ -93,17 +94,32 @@ function showView(id){
 async function changeDraw(){
  const id=$('drawYear').value;if(id)currentDrawId=id;await refreshAll();showView('home');toast('Sorteo seleccionado');
 }
+function toggleDrawForm(force){
+ const wrap=$('drawFormWrap');const shouldShow=typeof force==='boolean'?force:wrap.classList.contains('hidden');
+ wrap.classList.toggle('hidden',!shouldShow);
+ if(shouldShow){$('newDrawName').dataset.edited='';$('newDrawYear').value=new Date().getFullYear()+1;$('newDrawName').value=`Lotería de Navidad ${$('newDrawYear').value}`;$('newDrawDate').value=`${$('newDrawYear').value}-12-22`;}
+}
+$('newDrawYear').addEventListener('input',()=>{const year=$('newDrawYear').value;if(!$('newDrawName').dataset.edited)$('newDrawName').value=year?`Lotería de Navidad ${year}`:'';if(/^\d{4}$/.test(year))$('newDrawDate').value=`${year}-12-22`;});
+$('newDrawName').addEventListener('input',()=>{$('newDrawName').dataset.edited='1'});
+$('drawForm').addEventListener('submit',async e=>{
+ e.preventDefault();const year=Number($('newDrawYear').value);let name=$('newDrawName').value.trim();const drawDate=$('newDrawDate').value||'';
+ if(!Number.isInteger(year)||year<1900||year>2200){toast('Introduce un año válido.');return}
+ const draws=await all('draws');if(draws.some(d=>d.year===year&&d.name.toLocaleLowerCase()===name.toLocaleLowerCase())){toast('Ya existe un sorteo con ese nombre y año.');return}
+ if(!name)name=`Lotería de Navidad ${year}`;const d={id:uid(),year,name,drawDate,createdAt:new Date().toISOString()};await put('draws',d);currentDrawId=d.id;$('newDrawName').dataset.edited='';toggleDrawForm(false);await refreshAll();showView('home');toast('Nuevo sorteo creado. Los números nuevos se vincularán a este sorteo.');
+});
 async function openNumberForm(id=null){
  const n=id?await get('numbers',id):null;
  $('editNumberId').value=n?.id||'';$('numValue').value=n?.number||'';$('numNotes').value=n?.notes||'';
- $('numberFormTitle').textContent=n?'Editar número':'Añadir número';showView('numberFormView');
+ $('numberFormTitle').textContent=n?'Editar número':'Añadir número';
+ await refreshAll();$('numberDraw').value=n?.drawId||currentDrawId;showView('numberFormView');
 }
 $('numberForm').addEventListener('submit',async e=>{
  e.preventDefault();const number=$('numValue').value.trim();if(!/^\d{5}$/.test(number)){toast('Introduce exactamente cinco cifras.');return}
- const id=$('editNumberId').value;const existing=(await drawNumbers()).find(n=>n.number===number&&n.id!==id);
+ const id=$('editNumberId').value;const drawId=$('numberDraw').value;if(!drawId){toast('Selecciona el sorteo.');return}
+ const existing=(await queryIndex('numbers','drawId',drawId)).find(n=>n.number===number&&n.id!==id);
  if(existing){toast('Ese número ya está registrado en este sorteo.');return}
- const n={id:id||uid(),drawId:currentDrawId,number,notes:$('numNotes').value.trim(),updatedAt:new Date().toISOString()};
- await put('numbers',n);currentNumberId=n.id;await refreshAll();openDetail(n.id);toast('Número guardado');
+ const n={id:id||uid(),drawId,number,notes:$('numNotes').value.trim(),updatedAt:new Date().toISOString()};
+ await put('numbers',n);currentNumberId=n.id;currentDrawId=drawId;await refreshAll();openDetail(n.id);toast('Número guardado en el sorteo seleccionado');
 });
 async function openDetail(id){
  currentNumberId=id;const n=await get('numbers',id);if(!n)return showView('numbers');

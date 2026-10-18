@@ -39,12 +39,12 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#1
   <div class="stat"><small>Números registrados</small><strong id="statNumbers">0</strong></div>
   <div class="stat"><small>Pendiente de cobrar</small><strong id="statPending">0,00 €</strong></div>
  </div>
- <div class="card" style="margin-top:14px"><div class="formtitle"><h2>Mis números</h2><button onclick="openNumberForm()">＋ Añadir número</button></div><div id="homeNumbers"></div></div>
+ <div class="actions" style="margin-top:14px;margin-bottom:10px"><button class="full" onclick="openNumberForm()">＋ Añadir número</button></div><div class="card"><h2>Mis números</h2><div id="homeNumbers"></div></div>
  <div class="notice">Tus datos se guardan en este dispositivo. Exporta una copia de seguridad periódicamente desde Ajustes, especialmente antes de cambiar de iPhone.</div>
 </section>
 
 <section id="numbers" class="view">
- <div class="card"><div class="formtitle"><h2>Números y compras</h2><button onclick="openNumberForm()">＋ Añadir</button></div><div id="numberList"></div></div>
+ <div class="actions" style="margin-bottom:10px"><button class="full" onclick="openNumberForm()">＋ Añadir número</button></div><div class="card"><h2>Números y compras</h2><div id="numberList"></div></div>
 </section>
 
 <section id="owners" class="view">
@@ -55,13 +55,14 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#1
 <section id="settings" class="view">
  <div class="card"><h2>Copias de seguridad</h2><p class="smalltext">Exporta todos tus sorteos, números, compras, propietarios y estado de los pagos a un archivo JSON. Guárdalo en la app Archivos o en iCloud Drive.</p><div class="actions"><button class="full" onclick="exportBackup()">Exportar copia</button></div>
  <label for="backupFile">Restaurar una copia</label><input type="file" id="backupFile" accept=".json,application/json"><div class="actions" style="margin-top:10px"><button class="secondary full" onclick="importBackup()">Validar y restaurar</button></div><p class="smalltext">La restauración sustituye los datos actuales después de pedir confirmación. Exporta una copia antes de restaurar.</p></div>
- <div class="card"><h2>Preferencias</h2><p class="smalltext">Si has subido una nueva versión a GitHub Pages, pulsa para comprobar actualizaciones y recargar la aplicación.</p><button class="full" onclick="updateApp()">↻ Actualizar aplicación</button><hr><label for="drawYear">Sorteo seleccionado</label><select id="drawYear"></select><button class="secondary" onclick="changeDraw()">Usar este sorteo</button><hr><p class="smalltext">Versión 1.0 · Datos locales · Sin cuenta ni servidor.</p><button class="danger" onclick="clearAll()">Borrar todos los datos</button></div>
+ <div class="card"><h2>Preferencias</h2><p class="smalltext">Si has subido una nueva versión a GitHub Pages, pulsa para comprobar actualizaciones y recargar la aplicación.</p><button class="full" onclick="updateApp()">↻ Actualizar aplicación</button><hr><h3>Sorteos</h3><label for="drawYear">Sorteo seleccionado</label><select id="drawYear"></select><button class="secondary full" onclick="changeDraw()" style="margin-top:8px">Usar este sorteo</button><button class="full" onclick="toggleDrawForm()" style="margin-top:8px">＋ Añadir nuevo sorteo</button><div id="drawFormWrap" class="hidden" style="margin-top:12px"><form id="drawForm"><label for="newDrawYear">Año del sorteo</label><input id="newDrawYear" type="number" min="1900" max="2200" required><label for="newDrawName">Nombre del sorteo</label><input id="newDrawName" maxlength="100" placeholder="Lotería de Navidad 2027"><label for="newDrawDate">Fecha del sorteo (opcional)</label><input id="newDrawDate" type="date"><div class="actions" style="margin-top:12px"><button type="submit">Guardar sorteo</button><button type="button" class="secondary" onclick="toggleDrawForm(false)">Cancelar</button></div></form></div><hr><p class="smalltext">Versión 1.2 · Datos locales · Sin cuenta ni servidor.</p><button class="danger" onclick="clearAll()">Borrar todos los datos</button></div>
 </section>
 
 <section id="numberFormView" class="view">
  <div class="card"><div class="formtitle"><h2 id="numberFormTitle">Añadir número</h2><button class="secondary small" onclick="showView('numbers')">Cancelar</button></div>
  <form id="numberForm">
   <input type="hidden" id="editNumberId">
+  <label for="numberDraw">Sorteo al que pertenece</label><select id="numberDraw" required></select>
   <label for="numValue">Número de cinco cifras</label><input id="numValue" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="Ej. 01234" required>
   <label for="numNotes">Notas (opcional)</label><input id="numNotes" maxlength="200" placeholder="Administración, lugar de compra...">
   <div class="actions" style="margin-top:16px"><button type="submit">Guardar número</button><button type="button" class="secondary" onclick="showView('numbers')">Cancelar</button></div>
