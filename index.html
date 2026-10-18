@@ -54,10 +54,23 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#1
  <form id="ownerForm"><label for="ownerName">Nombre</label><input id="ownerName" required maxlength="80" placeholder="Ej. Ana Pérez"><label for="ownerNotes">Notas (opcional)</label><input id="ownerNotes" maxlength="200" placeholder="Ej. hermana, compañero..."><div class="actions" style="margin-top:12px"><button type="submit">Guardar persona</button></div></form><hr><div id="ownerList"></div></div>
 </section>
 
+<section id="summary" class="view">
+ <div class="card"><h2>Resumen general</h2><p class="smalltext">Resumen de todos los sorteos registrados, sin importar cuál tengas seleccionado en Inicio.</p>
+  <div class="stats">
+   <div class="stat"><small>Coste total de compras</small><strong id="summaryCost">0,00 €</strong></div>
+   <div class="stat"><small>Coste que me corresponde</small><strong id="summaryMineCost">0,00 €</strong></div>
+   <div class="stat"><small>Importe jugado total</small><strong id="summaryPlayed">0,00 €</strong></div>
+   <div class="stat"><small>Pendiente de cobrar</small><strong id="summaryPending">0,00 €</strong></div>
+  </div>
+ </div>
+ <div class="card"><h2>Desglose por sorteo</h2><div id="summaryDraws"></div></div>
+ <div class="card"><h2>Pagos pendientes por persona</h2><div id="summaryPeople"></div></div>
+</section>
+
 <section id="settings" class="view">
  <div class="card"><h2>Copias de seguridad</h2><p class="smalltext">Exporta todos tus sorteos, números, compras, propietarios y estado de los pagos a un archivo JSON. Guárdalo en la app Archivos o en iCloud Drive.</p><div class="actions"><button class="full" onclick="exportBackup()">Exportar copia</button></div>
  <label for="backupFile">Restaurar una copia</label><input type="file" id="backupFile" accept=".json,application/json"><div class="actions" style="margin-top:10px"><button class="secondary full" onclick="importBackup()">Validar y restaurar</button></div><p class="smalltext">La restauración sustituye los datos actuales después de pedir confirmación. Exporta una copia antes de restaurar.</p></div>
- <div class="card"><h2>Preferencias</h2><p class="smalltext">Si has subido una nueva versión a GitHub Pages, pulsa para comprobar actualizaciones y recargar la aplicación.</p><button class="full" onclick="updateApp()">↻ Actualizar aplicación</button><hr><h3>Sorteos</h3><label for="drawYear">Sorteo seleccionado</label><select id="drawYear"></select><button class="secondary full" onclick="changeDraw()" style="margin-top:8px">Usar este sorteo</button><button class="full" onclick="toggleDrawForm()" style="margin-top:8px">＋ Añadir nuevo sorteo</button><div id="drawFormWrap" class="hidden" style="margin-top:12px"><form id="drawForm"><label for="newDrawYear">Año del sorteo</label><input id="newDrawYear" type="number" min="1900" max="2200" required><label for="newDrawName">Nombre del sorteo</label><input id="newDrawName" maxlength="100" placeholder="Lotería de Navidad 2027"><label for="newDrawDate">Fecha del sorteo (opcional)</label><input id="newDrawDate" type="date"><div class="actions" style="margin-top:12px"><button type="submit">Guardar sorteo</button><button type="button" class="secondary" onclick="toggleDrawForm(false)">Cancelar</button></div></form></div><hr><p class="smalltext">Versión 1.2 · Datos locales · Sin cuenta ni servidor.</p><button class="danger" onclick="clearAll()">Borrar todos los datos</button></div>
+ <div class="card"><h2>Preferencias</h2><p class="smalltext">Si has subido una nueva versión a GitHub Pages, pulsa para comprobar actualizaciones y recargar la aplicación.</p><button class="full" onclick="updateApp()">↻ Actualizar aplicación</button><hr><h3>Sorteos</h3><label for="drawYear">Sorteo seleccionado</label><select id="drawYear"></select><button class="secondary full" onclick="changeDraw()" style="margin-top:8px">Usar este sorteo</button><button class="full" onclick="toggleDrawForm()" style="margin-top:8px">＋ Añadir nuevo sorteo</button><div id="drawFormWrap" class="hidden" style="margin-top:12px"><form id="drawForm"><label for="newDrawYear">Año del sorteo</label><input id="newDrawYear" type="number" min="1900" max="2200" required><label for="newDrawName">Nombre del sorteo</label><input id="newDrawName" maxlength="100" placeholder="Lotería de Navidad 2027"><label for="newDrawDate">Fecha del sorteo (opcional)</label><input id="newDrawDate" type="date"><div class="actions" style="margin-top:12px"><button type="submit">Guardar sorteo</button><button type="button" class="secondary" onclick="toggleDrawForm(false)">Cancelar</button></div></form></div><hr><p class="smalltext">Versión 1.4 · Datos locales · Sin cuenta ni servidor.</p><button class="danger" onclick="clearAll()">Borrar todos los datos</button></div>
 </section>
 
 <section id="numberFormView" class="view">
@@ -97,8 +110,8 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}.notice{background:#1
 </main>
 <nav>
  <button class="active" data-view="home" onclick="showView('home')"><span>⌂</span>Inicio</button>
- <button data-view="numbers" onclick="showView('numbers')"><span>🎟</span>Números</button>
  <button data-view="owners" onclick="showView('owners')"><span>♙</span>Personas</button>
+ <button data-view="summary" onclick="showView('summary')"><span>▥</span>Resumen</button>
  <button data-view="settings" onclick="showView('settings')"><span>⚙</span>Ajustes</button>
 </nav>
 <div id="toast" style="position:fixed;left:14px;right:14px;bottom:calc(85px + env(safe-area-inset-bottom));background:#1c3855;border:1px solid #4c7297;padding:13px 16px;border-radius:12px;z-index:30;display:none;box-shadow:0 10px 30px #0006"></div>

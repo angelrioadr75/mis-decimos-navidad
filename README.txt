@@ -2,8 +2,8 @@ MIS DÉCIMOS — Lotería de Navidad (PWA iPhone)
 ================================================
 
 Contenido:
-- index.html: interfaz.
-- app.js: lógica, IndexedDB, compras, propietarios, porcentajes, pagos y copias.
+- index.html: interfaz con pestañas Inicio, Personas, Resumen y Ajustes.
+- app.js: lógica, IndexedDB, compras, propietarios, porcentajes, pagos, resumen por sorteo y copias.
 - manifest.json: configuración PWA.
 - sw.js: caché offline.
 - icon.svg: icono.
@@ -27,7 +27,7 @@ Notas:
 - Exporta una copia JSON regularmente desde Ajustes.
 - Restaurar una copia sustituye los datos existentes tras confirmación.
 - Para evitar perder datos, prueba primero con datos ficticios y comprueba exportación/restauración.
-- Esta es una primera versión funcional; antes de confiarle datos definitivos conviene hacer pruebas de uso y restauración en el iPhone.
+- Esta es una versión 1.4; antes de confiarle datos definitivos conviene hacer pruebas de uso y restauración en el iPhone.
 
 Regla de pagos:
 - Por cada número, cada persona tiene un porcentaje y un importe pagado.

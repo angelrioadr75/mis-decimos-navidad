@@ -84,15 +84,54 @@ async function refreshAll(){
  for(const selectorId of ['drawYear','drawSelectHome','drawSelectNumbers']){
   const selector=$(selectorId);if(selector)selector.innerHTML=drawOptions;
  }
- const numberDraw=$('numberDraw');if(numberDraw){const selected=numberDraw.value||currentDrawId;numberDraw.innerHTML=draws.map(d=>`<option value="${d.id}" ${d.id===selected?'selected':''}>${esc(d.name)}</option>`).join('');}
+ const numberDraw=$('numberDraw');if(numberDraw){const selected=numberDraw.value||currentDrawId;numberDraw.innerHTML=draws.map(d=>`<option value="${d.id}" ${d.id===selected?'selected':''}>${esc(d.name)}</option>`).join('');} await renderSummary();
 }
+async function renderSummary(){
+ const draws=(await all('draws')).slice().sort((a,b)=>b.year-a.year);
+ const allNumbers=await all('numbers');
+ const owners=await all('owners');
+ let totalCost=0,totalPlayed=0,totalMine=0,totalPending=0;
+ const byDraw=[];
+ const pendingByOwner=new Map();
+ for(const draw of draws){
+  const numbers=allNumbers.filter(n=>n.drawId===draw.id);
+  let drawCost=0,drawPlayed=0,drawMine=0,drawPending=0;
+  for(const n of numbers){
+   const totals=purchaseTotals(await purchasesFor(n.id));
+   const shares=await sharesFor(n.id);
+   const otherCostPct=shares.filter(s=>!s.isMe).reduce((sum,s)=>sum+(s.costPercentage ?? s.percentage),0);
+   const minePct=Math.max(0,100-otherCostPct);
+   drawCost+=totals.cost;drawPlayed+=totals.played;drawMine+=totals.cost*minePct/100;
+   for(const share of shares.filter(s=>!s.isMe)){
+    const state=await shareState(share,totals.cost);
+    drawPending+=state.pending;
+    if(state.pending>0){
+     const owner=owners.find(o=>o.id===share.ownerId);
+     const key=share.ownerId||'unknown';
+     const current=pendingByOwner.get(key)||{name:owner?.name||'Persona eliminada',amount:0};
+     current.amount=cents(current.amount+state.pending);pendingByOwner.set(key,current);
+    }
+   }
+  }
+  totalCost+=drawCost;totalPlayed+=drawPlayed;totalMine+=drawMine;totalPending+=drawPending;
+  byDraw.push({draw,numbers:numbers.length,cost:drawCost,played:drawPlayed,mine:drawMine,pending:drawPending});
+ }
+ const setText=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+ setText('summaryCost',eur(totalCost));setText('summaryMineCost',eur(totalMine));setText('summaryPlayed',eur(totalPlayed));setText('summaryPending',eur(totalPending));
+ const drawEl=$('summaryDraws');
+ if(drawEl)drawEl.innerHTML=byDraw.length?byDraw.map(x=>`<div class="item"><div class="itemhead"><div><b>${esc(x.draw.name)}</b><div class="smalltext">${x.numbers} número${x.numbers===1?'':'s'} registrado${x.numbers===1?'':'s'}</div></div><div class="money">${eur(x.cost)}</div></div><div class="smalltext" style="margin-top:8px">Coste que te corresponde: <b>${eur(x.mine)}</b> · Importe jugado: <b>${eur(x.played)}</b></div><div class="smalltext">Pendiente de cobrar: <b>${eur(x.pending)}</b></div></div>`).join(''):'<div class="empty">Todavía no hay sorteos registrados.</div>';
+ const pendingList=[...pendingByOwner.values()].filter(x=>x.amount>0).sort((a,b)=>b.amount-a.amount);
+ const peopleEl=$('summaryPeople');
+ if(peopleEl)peopleEl.innerHTML=pendingList.length?pendingList.map(x=>`<div class="item"><div class="itemhead"><b>${esc(x.name)}</b><strong>${eur(x.amount)}</strong></div></div>`).join(''):'<div class="empty">No hay pagos pendientes de cobrar.</div>';
+}
+
 function numberCard(n){
  return `<div class="item"><div class="itemhead"><div style="min-width:0"><div class="number">${esc(n.number)}</div><div class="smalltext">${esc(n.notes||'Sin notas')}</div></div><button class="secondary small" onclick="openDetail('${n.id}')">Ver detalle →</button></div></div>`;
 }
 function showView(id){
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
- if(id==='home'||id==='numbers'||id==='owners'||id==='settings')refreshAll();
+ if(['home','numbers','owners','settings','summary'].includes(id))refreshAll();
  window.scrollTo({top:0,behavior:'smooth'});
 }
 async function changeDraw(){
@@ -132,7 +171,7 @@ $('numberForm').addEventListener('submit',async e=>{
  await put('numbers',n);currentNumberId=n.id;currentDrawId=drawId;await refreshAll();openDetail(n.id);toast('Número guardado en el sorteo seleccionado');
 });
 async function openDetail(id){
- currentNumberId=id;const n=await get('numbers',id);if(!n)return showView('numbers');
+ currentNumberId=id;const n=await get('numbers',id);if(!n)return showView('home');
  const d=await get('draws',n.drawId);const totals=await numberTotals(id);
  $('detailYear').textContent=d?.name||'';$('detailNumber').textContent=n.number;$('detailNotes').textContent=n.notes||'';
  $('detailCost').textContent=eur(totals.cost);
@@ -161,7 +200,7 @@ async function deleteCurrentNumber(){
  if(!confirm('¿Eliminar este número, sus compras y su reparto?'))return;
  for(const p of await purchasesFor(currentNumberId))await del('purchases',p.id);
  for(const s of await sharesFor(currentNumberId))await del('shares',s.id);
- await del('numbers',currentNumberId);currentNumberId=null;await refreshAll();showView('numbers');toast('Número eliminado');
+ await del('numbers',currentNumberId);currentNumberId=null;await refreshAll();showView('home');toast('Número eliminado');
 }
 function openPurchaseForm(){ $('editPurchaseId').value='';$('purchaseFormTitle').textContent='Añadir compra';$('purchaseType').value='whole';$('purchaseQty').value=1;$('purchasePrice').value=20;$('purchasePlayed').value=20;$('purchaseDate').value=today();$('purchaseSeller').value='';$('purchaseNotes').value='';showView('purchaseFormView');}
 $('purchaseType').addEventListener('change',()=>{const whole=$('purchaseType').value==='whole';$('purchasePrice').value=whole?20:5;$('purchasePlayed').value=whole?20:5});
